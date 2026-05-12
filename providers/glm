@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export ANTHROPIC_AUTH_TOKEN="${CLAUDE_KEY_GLM:?set CLAUDE_KEY_GLM in ~/.bashrc}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec claude --settings "$REPO/providers/glm.json" "$@"

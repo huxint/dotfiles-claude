@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export ANTHROPIC_AUTH_TOKEN="${CLAUDE_KEY_KIMI:?set CLAUDE_KEY_KIMI in ~/.bashrc}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec claude --settings "$REPO/providers/kimi.json" "$@"

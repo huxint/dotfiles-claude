@@ -1,0 +1,21 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "",
+    "ANTHROPIC_AUTH_TOKEN": "",
+    "ANTHROPIC_BETAS": "context-1m-2025-08-07",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-7[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-opus-4-7[1m]",
+    "ENABLE_TOOL_SEARCH": "1",
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "teammateMode": "tmux",
+  "model": "opus[1m]",
+  "effortLevel": "xhigh",
+  "awaySummaryEnabled": false,
+  "skipDangerousModePermissionPrompt": true
+}
