@@ -1,0 +1,15 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.moonshot.ai/anthropic",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "kim-k2.6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "kim-k2.6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kim-k2.6",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "kim-k2.6",
+    "ENABLE_TOOL_SEARCH": "1",
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
+  "model": "kim-k2.6",
+  "effortLevel": "max"
+}
