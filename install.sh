@@ -31,7 +31,7 @@ if ! grep -qF "$MARKER" "$HOME/.bashrc" 2>/dev/null; then
   cat >> "$HOME/.bashrc" <<EOF
 
 $MARKER
-export PATH="$REPO/providers:\$PATH"
+export PATH="$TARGET/providers:\$PATH"
 # export CLAUDE_KEY_DEEPSEEK="sk-xxx"    # uncomment and fill for deepseek command
 # export CLAUDE_KEY_KIMI="sk-xxx"        # uncomment and fill for kimi command
 # export CLAUDE_KEY_GLM="sk-xxx"         # uncomment and fill for glm command
