@@ -1,60 +1,49 @@
 ---
 name: readme-writer
-description: "Writes or rewrites a README for the person who just found the project: what it is in one line, why it exists, how to install and use it, license. Gathers facts from the repo first (manifest, entry points, CLI help, CI config, license file), verifies every command it prints, matches the project's language and size, and rejects marketing tone, emoji headers, invented features, and internals tours. File trees and architecture diagrams only when readers cannot navigate without them. Use when asked to write, rewrite, improve, shorten, or review a README."
+description: "Write or revise READMEs from repository evidence, with verified setup and usage. Use when creating, improving, or reviewing a README."
 argument-hint: "[project dir or README path]"
 ---
 
 # README Writer
 
-The reader has just arrived, knows nothing, and gives thirty seconds to answer three questions in order: **What is this? Should I use it? How do I start?** Every other section earns its place only by serving that reader.
+A newcomer needs three answers in order: **What is this? Should I use it? How do I start?** Include material that helps them decide or complete their first useful task.
 
-## Gather facts first
+Use the requested project directory or README path, otherwise the current project. Reviews produce findings unless edits are also requested; writing and editing requests produce the README.
 
-Never write from the project name and a guess.
+## Workflow
 
-- **Identity**: the manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `install.sh`), existing README, `docs/`, `CHANGELOG`, `LICENSE`.
-- **What it does**: read the main module or command, not the file list. CLI: run `--help`. Library: read the public exports. Dotfiles: read the install script and what it installs.
-- **How to install and run**: the real commands. Run them when safe (temp dir, `--help`, `--dry-run`, `--version`). A command that fails is worse than no README.
-- **Real badges only**: CI config gives a build badge; a registry gives a version badge; a `LICENSE` file gives a license badge.
-- **Audience and language**: who uses this, and which language the existing docs, commits, and comments use. Write in that language. With no docs yet, use the language the user is speaking.
-- **The existing README**: keep every fact that is correct and specific. Correct what is wrong, cut what is filler, and say in the final message what was removed.
+1. **Establish facts.** Inspect the existing README, manifests, entry points, public exports, installation scripts, CI, relevant docs, and license. Use CLI help where applicable. Identify the audience, supported behavior, prerequisites, primary install path, and first useful operation; each claim must have repository or authoritative documentation evidence.
+2. **Verify the reader's path.** Follow the command-verification rules below. Account for every proposed command as executed successfully, corrected after failure, or unverified for a stated reason before presenting it as setup or usage.
+3. **Write the README.** Follow the reader's path below. Preserve correct, audience-relevant facts. Use the project's documentation language, or the user's language when none is established.
+4. **Check the result.** Verify local links and paths on disk; check external destinations when accessible. Confirm that prerequisites precede commands, examples use real interfaces, and license claims match the source. Report any unresolved link or command checks in the handoff.
 
-## Shape follows project type and size
+## Command verification
 
-| Project | Sections that earn a place | Skip |
-|---|---|---|
-| Small tool, script, dotfiles | name and pitch, install, usage, license | badges, contributing, architecture, table of contents |
-| CLI | pitch, install, quick start, short command reference pointing to `--help`, config, license | file tree |
-| Library or SDK | pitch, install, minimal example with real output, key API with link to full docs, compatibility, license | internals, every option |
-| Service or app | pitch, requirements, run locally, env var table, deploy pointer, license | code walkthrough |
-| Large multi-module repo | pitch, layout overview (the one case for a file tree), where to start, per-module links, license | per-module detail inline |
+Run installation and usage in a disposable environment where feasible. Use existing task authorization for commands that change state or contact external services.
 
-A 200-line tool gets a 30-line README. Remove a section rather than pad it.
+`--help`, `--version`, and `--dry-run` establish only what those modes exercise. Distinguish those checks from executing the documented install or operation. Commands requiring credentials, deployment, or an unavailable environment can remain documented from verified source evidence; identify the exact unexecuted steps and limits in the handoff.
 
-## Sections, in order
+Use literal commands that match the project, label values readers must supply, and show output only when observed. When a command fails, resolve the failure or explain the unmet prerequisite; do not present it as verified.
 
-1. **Name and one-line pitch**: what it does and for whom. "Syncs a folder of Markdown notes to Notion", not "a powerful, flexible sync framework".
-2. **Badges**: one row, only real ones.
-3. **Why or when to use it**: the problem, one paragraph. Compare to alternatives only if a newcomer would genuinely be choosing.
-4. **Install**: the shortest verified path. One primary method; alternatives linked.
-5. **Usage**: the most common task first, as a runnable command with its real output. Two or three examples beat ten.
-6. **Configuration**: only what a user must know. A table once there are more than three options.
-7. **License**: name and link. A contributing line if the project accepts contributions and says how.
+## Reader's path
 
-## Avoid
+Use the sections the project needs, in this order:
 
-- **Marketing tone**: powerful, robust, seamless, comprehensive, blazing fast, elegant, modern. A claim with no number or example behind it is cut.
-- **Emoji headers and feature bullet lists**. Features are shown in the pitch and usage examples.
-- **Invented content**: assumed features, unrun commands, missing screenshots, a roadmap nobody planned, a contributing process the project does not have.
-- **Internals tour**: how it works, class names, "Project Structure". That is contributor documentation; link it if it exists.
-- **Boilerplate**: a table of contents for a README under two screens, "PRs welcome!", empty "Acknowledgments" or "Support", "Made with ❤️".
-- **Full API or config dumps**. Point to generated docs or `--help`.
-- **File trees and diagrams by default**. Only when a reader cannot navigate without one, limited to what they need.
+1. **Identity:** name, concrete purpose, and intended user in one sentence.
+2. **Fit:** the problem it solves and any constraint a user needs to choose it. Compare alternatives only when that choice matters.
+3. **Start:** prerequisites and the shortest verified installation path. Link secondary methods.
+4. **Use:** the first common task as a runnable command or minimal API example. Add examples only for distinct useful tasks.
+5. **Configure:** values and compatibility details users need, with links to full references.
+6. **License:** the actual license name and source link. If no license is established, report that gap instead of assigning one.
 
-## Verify before finishing
+Adapt depth to the project: a script may need only installation and one example; a service may need environment setup and a deployment pointer; a multi-module repository may need a short navigation guide.
 
-- Every command in the README was run this session, or copies one that was. Name any command that could not be verified and why.
-- Every link resolves.
-- A stranger can say what the project is after the first line, and can install and run it without asking a question.
-- Nothing describes internals the reader did not need or features that do not exist.
-- The license is visible. The language matches the project and the length matches its size.
+## Editorial rules
+
+- Show capabilities through concrete purpose and usage. Keep claims factual and headings plain.
+- Keep optional material only when evidence and reader need justify it: real CI or registry badges, an established contribution process, or a meaningful compatibility note.
+- Link API, configuration, and contributor details rather than copying their full reference into the README.
+- Use a file tree or diagram only when it resolves a navigation problem. Keep it limited to what the reader needs.
+- Remove filler and empty sections. Length follows the reader's path, not a fixed template or line quota.
+
+Finish with the file changed, the commands and links checked, and material verification limits. The README itself should describe the project.

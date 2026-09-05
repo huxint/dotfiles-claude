@@ -1,28 +1,25 @@
 ---
 name: grilling
-description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
+description: "Grill a plan, decision, or idea to expose assumptions and trade-offs. Use when the user asks to be grilled or stress-test their thinking."
 ---
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
+# Grilling
 
-Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
+Interview relentlessly about decisions that could change the plan. Organize them as a **design tree** rooted in the user's goal, constraints, and success criteria. Its branches are consequential choices within that scope.
 
-Format a round like so:
+The **frontier** contains open decisions whose prerequisites are settled. Work the tree in rounds; each answer can expose new branches.
 
-```
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+## Each round
 
-➡️ <your recommended answer>
+1. **Establish the frontier.** Separate known facts, accepted decisions, assumptions, and open questions. A question that depends on another unanswered question belongs to a later round.
+2. **Resolve discoverable facts.** Inspect available code, files, and tools before asking the user. Delegate independent research when agent tools are available and it would help; otherwise inspect directly. Pending research blocks only dependent questions. Mark unavailable evidence explicitly.
+3. **Ask the frontier together.** Number each question, identify the decision, recommend an answer with its trade-off, and explain what evidence would change that recommendation. Ask the user for choices or information only they can supply.
+4. **Reconcile the answers.** Wait for the user's response before advancing dependent branches. Record settled decisions, challenge contradictions with concrete consequences, and carry unanswered questions forward. A recommendation or silence leaves a decision open.
 
----
+Probe goals, feasibility, dependencies, failure modes, reversibility, and success measures where they affect the outcome. Test assumptions with concrete cases. Reopen an accepted decision only when new evidence or a conflicting answer changes its basis.
 
-❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+## Completion
 
-➡️ <your recommended answer>
-```
+The interview is ready to close when every consequential branch in scope has a decision, an explicitly accepted assumption, or a user-approved deferral, and no unresolved blocker is hidden. Present the resulting plan and remaining trade-offs for confirmation.
 
-Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
-
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
-
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+If the user confirms, finish the interview and follow any existing authorization for implementation. If the user stops earlier, summarize the settled decisions and open branches. Research can proceed during the interview; implementation waits until the relevant decisions are confirmed.
