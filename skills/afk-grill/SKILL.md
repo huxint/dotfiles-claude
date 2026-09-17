@@ -6,7 +6,7 @@ argument-hint: <requirement or brief.md> | <path/to/PRD.md> [--rounds N] [--out 
 
 # AFK Grill
 
-`/grilling` aligns a requirement by walking the design tree breadth-first with the user answering every frontier question. That guarantees nothing is silently assumed, but it costs hours. This skill keeps the tree and the BFS and moves the human out of the loop: a **griller** subagent asks, a **researcher** subagent answers from the project itself, and you (the orchestrator) merge rounds until the tree converges. The human then spends about ten minutes on the only things evidence cannot settle.
+`/grilling` (its protocol is in `references/grilling.md`) aligns a requirement by walking the design tree breadth-first with the user answering every frontier question. That guarantees nothing is silently assumed, but it costs hours. This skill keeps the tree and the BFS and moves the human out of the loop: a **griller** subagent asks, a **researcher** subagent answers from the project itself, and you (the orchestrator) merge rounds until the tree converges. The human then spends about ten minutes on the only things evidence cannot settle.
 
 Two ideas make an unattended loop safe:
 
