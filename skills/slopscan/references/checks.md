@@ -1,136 +1,99 @@
 # Slop checks
 
-Use each category to investigate behavior, then apply its exceptions. A candidate becomes a finding only with a location, violated requirement or convention, and concrete consequence. Examples identify patterns; equivalent-looking code may have different contracts.
+For each category: what to look for, how to establish it, the better form, and the exceptions. A candidate becomes a finding only with a location, the better form written out, and what the change removes. Examples identify patterns; code that looks the same may carry a different contract.
 
-## A. Silent failure and fabricated data
+## A. Over-defense
 
-Keep required data and failures explicit at the boundary that owns them.
+A guard is dead when the condition it tests cannot hold where it stands. Establish that from the code, not from intuition.
 
-- Trace swallowed exceptions, catch-and-log paths that still report success, and error sentinels callers never check.
-- Check defaults on required fields: a missing amount becoming zero, a missing timestamp becoming the current time, or coercion hiding malformed input.
-- Investigate retries of non-transient failures, undisclosed fallback values, and compatibility probing for upstream data the project controls.
-- Remove repeated defenses only after establishing the runtime guarantee they duplicate.
+- Trace the guarded value to its origin: a constructor that always sets the field, a parser that raises on malformed input, a signature that types the parameter, a caller that validated already. Cite the line that makes the check dead.
+- Look for `try/except` around code that cannot raise; `except Exception` handlers that log and continue; `isinstance` or `hasattr` on values the types settle; `if x is not None` on a value with no `None` path; `if len(xs) > 0` before a `for`; a defensive copy of data nobody mutates; a fallback default for required configuration; a retry around a deterministic failure; the same input validated at every layer it passes through.
+- Better form: delete the check and let the guarantee carry it. When the guarantee is only implicit, make it explicit once at the boundary (a type, a validation at the entry point, an assertion that names the invariant) and delete the downstream copies.
 
-Valid cases include optional defaults, bounded transient recovery, contract-defined degradation, and validation at trust boundaries. Type annotations alone do not establish runtime validity.
+Exceptions: trust boundaries (user input, network, files, databases, third-party responses); a documented contract that promises the check; an invariant the language cannot express; behavior that varies across supported versions of a dependency. In a dynamically typed language an annotation alone is not a runtime guarantee unless something validates it.
 
-## B. Band-aid patches
+## B. Needless wrapping
 
-Trace the wrong value to its producer and repair the violated contract there.
+A layer earns its place by changing something: the arguments, the error contract, the lifecycle, or the name the call site reads.
 
-- Investigate input-specific branches, magic offsets, and consumer cleanup added to compensate for an incorrect producer.
-- Compare changed expectations with the intended behavior; a test adjusted to a defect can hide the same cause.
+- Look for a function whose body is one call forwarding the same arguments; a class with one method and no state; a local wrapper around a standard-library or dependency call that adds no argument, default, or error translation; accessors that only return or assign a field; an exception subclass with no extra field and no handler that distinguishes it; a decorator or context manager around one statement; a chain of re-exports; a layer whose removal leaves every caller working unchanged.
+- Read the callers. A wrapper with one caller is inlined; a wrapper with many still needs a reason beyond brevity.
+- Better form: call the thing directly. If the wrapper's name carried meaning, keep the meaning as a named argument or a comment at the call site.
 
-Valid cases include normalization owned by a boundary and necessary third-party workarounds with a documented constraint or upstream issue.
+Exceptions: a seam a test replaces; a boundary the project intends to swap (a vendor call behind one name); public API surface that outside code depends on; one place that hides a genuinely ugly call.
 
-## C. Dead code, leftovers, and placeholder stubs
+## C. A better form exists
 
-Establish whether a path still serves a caller or supported contract.
+The first form that worked is rarely the simplest. For every branch, loop, and data structure, ask what would make it unnecessary.
 
-- Look for unreachable branches, unused imports or configuration, abandoned duplicate implementations, and commented-out attempts.
-- Inspect required runtime paths containing unfinished stubs and investigation-only logging or breakpoints.
-- Check exports, registries, configuration, and dynamic references before declaring code unused.
+- **Special cases.** A branch for the first, last, empty, or missing element; a check that runs on every iteration for a condition that holds on one. Look for the structure that makes the case ordinary: a lookup with a default, a `defaultdict`, an accumulator seeded so the first iteration needs no test, a loop over adjacent pairs instead of an index minus one, an indirection one level up so the first element takes the same path as the rest.
+- **Control flow.** A `found` flag plus `break` where `any`, `next`, or `for/else` says it; nested `if` where a guard clause and early return flatten; `if c: return True else: return False`; an `elif` chain on one value that is a dictionary; `try/except KeyError` where `.get` was meant, or the reverse.
+- **Loops.** A manual index that `enumerate` provides; index-based parallel iteration that is `zip`; a count, sum, min, or max built by hand; a list built to be consumed once; a membership test against a list inside a loop.
+- **Data.** Parallel lists that are one list of records; a tuple unpacked positionally in several places; a value computed twice, or stored when deriving it is free; a boolean parameter that selects between two functions; a string that encodes a structure the code then parses back.
+- Better form: write it. If it does not fit in the table, put the code block under the table and point to it.
 
-Valid cases include abstract methods, tracked deferred work outside the task, and placeholders or code examples clearly intended for documentation or configuration templates.
+Exceptions: an idiom the project does not use and would find foreign; a longer form that carries a needed name or comment; performance-motivated code backed by a measurement; a form the project's toolchain cannot express.
 
-## D. Narration comments and doc padding
+## D. Wrong level of abstraction
 
-Keep rationale and caller contracts; remove prose that merely repeats code or the working session.
+Judge each layer by whether it separates things that change for different reasons. Caller count does not settle this; the reason to change does.
 
-- Identify repeated signatures, operation-by-operation narration, decorative banners, and draft or review remarks.
-- Check generic summaries, marketing claims, and embedded changelog text for actual reader value.
+- **Too high.** A base class with one subclass; an interface with one implementation; a registry, factory, or plugin loader with one entry; a strategy pattern for two branches; a generic parameter instantiated once; a config object holding two constants; an event bus with one subscriber. Better form: collapse to the concrete thing, and keep a seam only where a second variant is scheduled, not imaginable.
+- **Too low.** The same block repeated with one name changed; rules interleaved with I/O, logging, and formatting in one long function; eight positional parameters that are one record; a dictionary passed around where a type would carry the fields and their invariants; a module that is a bag of unrelated functions. Better form: name the concept the repetition circles, extract it, and let each call site read as the rule it expresses.
+- **Mixed.** One function that parses, validates, persists, and renders; a domain rule in `utils`; a database call inside a formatting helper; presentation strings in a model. Better form: one responsibility per function, the domain rule at the level of the domain.
 
-Valid cases include invariants, workarounds, public API contracts, legal notices, tool directives, and algorithm steps whose order needs explanation.
+Exceptions: an abstraction the framework or a public contract requires; an extension point the task or the docs name; duplication between modules meant to evolve independently (similar text alone does not prove a shared concept).
 
-## E. Speculative abstraction
+## E. Padding
 
-Require a present responsibility, contract, or variation that justifies each layer.
+Words that carry no information the reader lacks.
 
-- Investigate single-entry registries, one-strategy factories, unused options, pass-through wrappers, and generic machinery without a current use.
-- Look for chains of thin layers and custom utilities that duplicate equivalent behavior already available in the project or its dependencies.
+- Comments that restate the next line, the signature, or the loop; docstrings that list parameters the types already declare; banners; changelog lines and session remarks ("as requested", "fixed per review"); commented-out code; a `TODO` with no owner or reason.
+- `# type: ignore`, `# noqa`, `@ts-ignore`, `as any` on a line with a real mismatch underneath.
+- Logging that narrates control flow; decorated progress output in library code; a message that restates the return value.
+- Filler names (`data`, `info`, `item`, `helper`, `manager`, `utils`, `process`, `handle`, `result`, `temp`) where the concept has a name; draft names (`newX`, `xV2`, `fixedY`, `old_`, `_backup`) that mean something only to whoever saw the previous version.
+- Better form: delete, or replace with the rationale, invariant, or caller contract the code cannot say. A filler name becomes the concept.
 
-Valid cases include a requested extension point or a boundary with a real ownership, lifecycle, testing, or compatibility purpose. Caller count alone does not establish whether an abstraction earns its place.
+Exceptions: invariants, workarounds with their reason, public API contracts, legal notices, tool directives, doc examples; names a framework or protocol imposes; established local shorthand.
 
-## F. Forced consolidation
+## F. Leftovers and creep
 
-Share logic when its callers share the same reason to change.
+Things in the diff the task did not need.
 
-- Investigate mode flags selecting unrelated operations, kitchen-sink modules, and generic processors coupling independent features.
-- Compare a parameterized abstraction with its callers: shared syntax may conceal different contracts.
+- Unreachable branches; unused imports, options, and configuration keys; an old implementation kept beside its replacement; a flag that always takes one value; a stub (`pass`, `raise NotImplementedError`, `return None  # TODO`) on a path the task requires.
+- Renames, formatting sweeps, dependency additions, and behavior changes outside the requested outcome. Proximity to touched code is not a reason.
+- Check exports, registries, configuration, reflection, and dynamic references before calling code unused.
+- Better form: delete the leftover; move the creep to its own change.
 
-Valid cases include genuinely shared invariants and dispatch that forms an intentional public interface.
+Exceptions: abstract methods; deferred work tracked outside the task with an owner; placeholders in documentation and templates; a supporting change across a module boundary that the requested behavior needs.
 
-## G. Consistency and style drift
+## G. Silent failure and fabricated data
 
-Use neighboring conventions when they preserve the required semantics.
+Keep failures and required data explicit at the boundary that owns them.
 
-- Compare imports, libraries, error handling, naming, formatting, and architectural patterns with nearby code.
-- Check deprecated APIs and broad formatting changes unrelated to the task.
+- Trace swallowed exceptions, catch-and-log paths that still report success, and error sentinels no caller checks.
+- Check defaults on required fields: a missing amount becoming zero, a missing timestamp becoming now, coercion that hides malformed input.
+- Look for consumer-side cleanup compensating for a producer's bug, input-specific branches, magic offsets, and test expectations edited to match a defect.
+- Better form: let the failure surface where it happens, or handle it with a decision the caller can see (a bounded retry, degradation the contract defines, a report). Fix a wrong value at its producer.
 
-Valid cases include deliberate migrations and differences required by behavior. For example, scalar and array APIs are not interchangeable solely because both expose a square-root function.
+Exceptions: optional fields with meaningful defaults; bounded transient recovery; degradation the contract defines; validation at trust boundaries; a third-party workaround with the upstream issue named.
 
-## H. Fragile duplication
+## H. Misused APIs and unsafe code
 
-Keep shared facts authoritative in one place.
+Verify unfamiliar calls against the installed version; trace unsafe operations to their inputs.
 
-- Trace duplicated counts, ordinals, magic strings, schema rules, and parallel lists or branches that must change together.
-- Identify copied logic whose changes can silently diverge; establish whether the copies actually share a contract.
+- Symbols, imports, argument names, return values, and versions absent from the lockfile or the type definitions. An unavailable lookup is a verification gap, not proof of invention; record it.
+- Semantic traps: `strip` as prefix removal; the return value of an in-place `sort`; a generator consumed twice; an unawaited coroutine; a mutable default argument; string comparison of versions or numbers; float equality; naive and aware datetimes mixed.
+- Untrusted input reaching SQL, shell, HTML, `eval`, or deserialization without parameterization or escaping; embedded credentials; disabled certificate checks; blocking calls in async paths; shared mutable state without an owner; resources without reliable cleanup.
+- Better form: the correct call, the parameterized query, the awaited call, the explicit tolerance.
 
-Valid cases include intentionally independent modules and hand-derived test expectations. Similar text alone does not justify coupling their implementations.
+Exceptions: safe parameterization, deliberate state ownership, and domain guarantees can justify a construct. A local convention never justifies a demonstrated vulnerability.
 
-## I. Hallucinated or misused APIs
+## I. Test slop
 
-Verify unfamiliar calls against the installed version, type definitions, or documentation matching the lockfile.
+A test earns its place by failing for one reason in one scenario.
 
-- Check symbols, imports, argument names, return values, and version availability.
-- Inspect semantic traps: treating `strip` as prefix removal, using an in-place sort's return value, consuming a generator as a list, or dropping an awaitable.
+- Assertions of presence, type, or "did not throw" where a promised value was available; expectations copied from the implementation; mocks that replace the subject instead of its boundaries; `sleep` as synchronization; real time, randomness, or network in the arrange step; several scenarios in one test; an expectation edited to match wrong output.
+- Better form: an independently derived expected value, the subject unmocked, one scenario per test, injected time.
 
-An unavailable lookup is a verification gap, not proof that an API is invented. Record the unresolved call and missing evidence.
-
-## J. Scope creep
-
-Tie each change to the requested outcome or a necessary dependency of that outcome.
-
-- Identify unrelated renames, new options, behavior changes, dependency additions, and formatting sweeps.
-- Explain why a supporting change is needed; proximity to touched code is not sufficient.
-
-Valid cases include repairs across module boundaries that are necessary for the requested behavior. Judge necessity by the contract, not by the original diff's file list.
-
-## K. Test slop
-
-Require each test to detect a meaningful failure in one scenario.
-
-- Inspect vacuous assertions, expectations copied from implementation logic, and mocks that replace the behavior supposedly tested.
-- Check missing edge or error coverage where the risk demands it, expectations changed to match defects, and unrelated behaviors combined in one test.
-- Investigate uncontrolled time, network, shared state, sleep-based synchronization, and broad snapshots standing in for business-rule assertions.
-
-Valid cases include narrow smoke tests and interaction checks when the interaction is the contract. Judge an assertion against what the test is meant to prove.
-
-## L. Naming slop
-
-Judge a name where readers encounter it.
-
-- Identify filler, action chains, implementation details irrelevant to callers, and labels meaningful only relative to a draft.
-- Check vocabulary drift, misleading side effects, and ambiguity that survives the surrounding scope.
-
-Valid cases include framework-required names, established local abbreviations, and real protocol or compatibility versions.
-
-## M. Security and correctness
-
-Trace unsafe operations to inputs, ownership, and observable effects.
-
-- Investigate untrusted values reaching SQL, shell, HTML, evaluation, or unsafe deserialization without the required separation or validation.
-- Check embedded credentials, disabled certificate checks, and unintended network exposure.
-- Trace mutable defaults, shared caches, races, blocking work in asynchronous paths, and resource lifetimes lacking reliable cleanup.
-- Examine floating-point comparisons, mixed timezone semantics, and string comparisons used where numeric or version ordering is required.
-
-Safe parameterization, deliberate state ownership, and domain guarantees can justify a construct. A local convention alone cannot justify a demonstrated vulnerability or correctness defect.
-
-## N. Verbosity and unidiomatic code
-
-Prefer the simplest familiar expression that preserves meaning.
-
-- Look for redundant boolean branches, needless nesting, manual operations with clear local idioms, and temporary variables that add no meaning.
-- Inspect type suppressions and broad types that conceal a real mismatch.
-- Check overlong functions and decorative output against the project's established style.
-
-Valid cases include language-required ceremony, meaningful intermediate names, and explicit forms that clarify a domain constraint. Fix semantic defects before stylistic ones.
+Exceptions: narrow smoke tests; interaction checks when the interaction is the contract.
