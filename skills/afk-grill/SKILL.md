@@ -1,42 +1,41 @@
 ---
 name: afk-grill
-description: Unattended requirement alignment (an AFK grill loop) that turns a one-line requirement into a PRD without interviewing the user node by node. A fresh-context griller subagent asks what /grilling would ask, a researcher subagent answers from the project's own code, docs and conventions with citations, and rounds repeat until nothing is silently assumed. The output is built for a ten-minute human review - the 3 to 5 most uncertain nodes to confirm, acceptance cases that backstop every other node, and a provenance tag on every claim; the user confirms or prunes and the loop re-runs only the affected subtree. Use whenever the user says afk grill, self grill, grill it yourself, 自动对齐需求, AFK 循环, 自己展开需求树, 帮我出 PRD, wants a PRD or spec generated from a brief without being interviewed, or hands back a reviewed PRD to re-align. Needs an existing project with code and docs to draw on; on a greenfield project stop and point to /grilling instead.
-argument-hint: <requirement or brief.md> | <path/to/PRD.md> [--rounds N] [--out DIR] [--inline]
+description: "Unattended requirement alignment (an AFK grill loop): turns a one-line requirement into a PRD without interviewing the user node by node. A fresh-context griller subagent asks what /grilling would ask, researcher subagents answer from the project's own code, docs, and conventions with citations, and rounds repeat until nothing is silently assumed. Built for a ten-minute human review: the 3 to 5 most uncertain nodes to confirm, acceptance cases that backstop every other node, a provenance tag on every claim; the user confirms or prunes and only the affected subtree re-runs. Use when the user says afk grill, self grill, grill it yourself, 自动对齐需求, AFK 循环, 自己展开需求树, 帮我出 PRD, wants a PRD or spec from a brief without being interviewed, or hands back a reviewed PRD. Needs an existing project with code and docs; on a greenfield project stop and point to /grilling."
+argument-hint: "<requirement or brief.md> | <path/to/PRD.md> [--rounds N] [--out DIR] [--inline]"
 ---
 
 # AFK Grill
 
-`/grilling` (its protocol is in `references/grilling.md`) aligns a requirement by walking the design tree breadth-first with the user answering every frontier question. That guarantees nothing is silently assumed, but it costs hours. This skill keeps the tree and the BFS and moves the human out of the loop: a **griller** subagent asks, a **researcher** subagent answers from the project itself, and you (the orchestrator) merge rounds until the tree converges. The human then spends about ten minutes on the only things evidence cannot settle.
+`/grilling` (`references/grilling.md`) walks the design tree breadth-first with the user answering every frontier question. Nothing is silently assumed, and it costs hours. This skill keeps the tree and the BFS and takes the human out of the loop: a **griller** subagent asks, **researcher** subagents answer from the project itself, and you merge rounds until the tree converges. The human then spends about ten minutes on what evidence cannot settle.
 
-Two ideas make an unattended loop safe:
+What makes the unattended loop safe:
 
-- **A tiny confirm surface.** After the tree converges, rank nodes by uncertainty and surface the 3 to 5 most uncertain for the human to confirm. Everything else gets a defensible default and a provenance tag.
-- **Acceptance cases backstop the rest.** Every behaviour node maps to a concrete acceptance case written in the project's own test style. A node the human never read is still pinned: if the implementation drifts from the PRD, a test complains before a person has to.
+- **A tiny confirm surface.** The 3 to 5 most uncertain nodes go to the human. Everything else takes a defensible default.
+- **Acceptance cases backstop the rest.** Every behavior node and every default maps to a concrete case in the project's test style. A node the human never read still fails loudly when the implementation drifts.
+- **Evidence or an honest tag.** Every claim cites the project or is marked assumed. An honest `[A]` beats a fake `[E]`.
 
-Two preconditions, both enforced below: the project has iterated long enough to have conventions, docs and code to draw on; and the loop's goal and pass conditions are concrete, not "until it feels done".
+Two preconditions, both enforced in preflight: the project has code and conventions to draw on, and the pass conditions are concrete. On a blank project the loop still converges, by inventing assumptions and dressing them as facts.
 
 ## Modes
 
-The invocation arguments are: `$ARGUMENTS`. Pick the mode:
+Arguments: `$ARGUMENTS`.
 
 | Argument | Mode |
 |---|---|
-| Free text, or a path to a file without the `<!-- afk-grill: prd -->` marker | **New run**; the text or file is the requirement brief |
-| Path to a PRD with the marker and `Status: in-progress` | **Resume** the loop from the grill log (`references/loop-protocol.md` §11) |
-| Path to a PRD with the marker plus review marks or answered confirm items | **Re-align**; read `references/prune-and-realign.md` |
-| Path to a finished PRD (Status `converged`, `budget-exhausted`, `escalated` or `approved`) with no marks and no answers | Nothing to run; show the confirm list again and how to mark or answer, then stop |
-| Nothing | Ask for the requirement (one sentence is enough), then New run |
+| Free text, or a file without the `<!-- afk-grill: prd -->` marker | **New run**; that is the brief |
+| PRD with the marker and `Status: in-progress` | **Resume** from the log (protocol §9) |
+| PRD with the marker plus review marks or answered confirm items | **Re-align** (`references/prune-and-realign.md`) |
+| Finished PRD, no marks, no answers | Show the confirm list and the mark syntax again; stop |
+| Nothing | Ask for the requirement; one sentence is enough |
 
-Flags anywhere in the arguments: `--rounds N` (default 5), `--out DIR` (default `docs/prd/<slug>/`), `--inline` (no subagents: you play griller and researcher yourself per `references/loop-protocol.md` §12; use it when subagents are unavailable or the user wants a cheap run, and expect a more lenient griller). Read `references/loop-protocol.md` before the first round of a new run or resume; this file gives the shape, that file gives the mechanics.
+Flags: `--rounds N` (default 5), `--out DIR` (default `docs/prd/<slug>/`), `--inline` (no subagents; protocol §10). Read `references/loop-protocol.md` before the first round of a new run or resume.
 
-## Phase 0: Preflight (never skip)
+## Preflight (never skip)
 
-Why: the loop can only answer questions from evidence. On a codebase without conventions it still converges, by inventing assumptions and dressing them as facts. That hides deviation instead of controlling it.
-
-1. **Inventory alignment sources.** Look for CLAUDE.md, README, `docs/`, ADRs or RFCs, earlier PRDs, API schemas, migrations, test suites, CI config, and the repo's age and activity (`git log --oneline | wc -l`, `git log -1 --format=%cd`). Note the test framework and where acceptance-level tests live; the T-cases will be written in that style.
-2. **Verdict.** GO when there is real code plus at least one source of conventions (a doc, or a codebase consistent enough to infer them). Otherwise NO-GO: stop, say what is missing, and offer `/grilling` for an interactive session, or ask for a short seed brief (goal, users, constraints, non-goals) to re-run with. Never run the loop on a NO-GO; an unattended loop on a blank project produces confident fiction.
-3. **Interpretation check.** List 2 or 3 readings of the requirement. Pick the one the project's context supports and record the rejected ones. If the readings diverge enough to change most of the tree, the interpretation becomes confirm item C1: take the most plausible reading and continue, don't block.
-4. **Launch card.** Print it and continue immediately. The user may already be away and can interrupt if they want changes.
+1. **Inventory.** CLAUDE.md, README, `docs/`, ADRs, earlier PRDs, schemas, migrations, tests, CI; repo age and activity. Note the test framework and where acceptance-level tests live; T-cases are written in that style.
+2. **Verdict.** GO with real code plus one source of conventions (a doc, or code consistent enough to infer them). Otherwise NO-GO: say what is missing, offer `/grilling` or a short seed brief (goal, users, constraints, non-goals), and stop.
+3. **Interpretation.** List 2 or 3 readings of the requirement, pick the one the project supports, record the rest. If the readings would change most of the tree, the choice becomes confirm item C1; continue on the most plausible reading rather than blocking.
+4. **Launch card.** Print it and continue; the user may already be away.
 
 ```
 AFK grill: launch
@@ -47,55 +46,46 @@ Output:         docs/prd/<slug>/PRD.md + grill-log.md
 Budget:         ≤5 rounds · ≤12 questions/round · confirm list ≤5
 ```
 
-## Phase 1: Seed the tree
+## Seed
 
-Create `PRD.md` from `references/prd-template.md` with Status `in-progress`, and `grill-log.md` opening with the launch card. Writing the file first matters: the griller must attack a clean artifact rather than your reasoning, and an interrupted run leaves something resumable.
+Create `PRD.md` from `references/prd-template.md` with Status `in-progress`, and `grill-log.md` opening with the launch card. The file comes first: the griller attacks a clean artifact rather than your reasoning, and an interrupted run stays resumable.
 
-Expand the root into the ten fixed dimensions (R1 goal, R2 users, R3 scope, R4 behaviour, R5 data, R6 interfaces, R7 non-functional, R8 dependencies, R9 rollout, R10 acceptance). Then run **round 0**, researchers only: for each dimension, ask what already exists in the project that this requirement touches and which conventions apply. Merge the answers so the griller's first pass attacks a draft with evidence, not a skeleton. Mark a dimension `[N/A: reason]` only with a reason the griller can check.
+Expand the root into the ten fixed dimensions (R1 goal, R2 users, R3 scope, R4 behavior, R5 data, R6 interfaces, R7 non-functional, R8 dependencies, R9 rollout, R10 acceptance). Run **round 0** with researchers only: for each dimension, what exists today that this touches, and which conventions apply. Merge, so the griller's first pass meets evidence rather than a skeleton. `[N/A: reason]` needs a reason the griller can check.
 
-## Phase 2: The loop
+## Loop
 
-Each round, in order:
+Each round:
 
-1. **Griller.** Spawn a fresh `general-purpose` agent with the verbatim prompt in `references/griller-prompt.md`. It sees only the requirement, the current `PRD.md`, and the frozen IDs. Never the grill log, never your reasoning, and never a `fork`: a forked agent inherits your context and with it your blind spots, and a reviewer that has seen the reasoning is biased toward agreeing with it. It returns at most 12 prioritized questions with node IDs and a verdict.
-2. **Researchers.** Add any open nodes you know the griller missed, dedupe against the log, cap the batch at 12 by priority, group by area, and spawn 2 to 4 `general-purpose` agents in one message with the verbatim prompt in `references/researcher-prompt.md`. They answer with citations or say the project is silent. Reusing a researcher across rounds via SendMessage is fine: accumulated codebase knowledge helps it and cannot bias it, since every answer must still cite. Never reuse a griller.
-3. **Merge.** Update `PRD.md`: node states, new child nodes the answers unlock, IDs appended and never renumbered. Reject any answer whose citation does not exist or does not say what is claimed, and re-ask it next round. Append the round to `grill-log.md` (questions, answers, evidence, state changes).
-4. **Check the pass conditions** below. Continue or stop.
+1. **Griller.** A fresh `general-purpose` agent with the verbatim prompt in `references/griller-prompt.md`. It sees the requirement, the current `PRD.md`, and the frozen IDs; never the log, never your reasoning, never a `fork` (an agent that inherits your context inherits your blind spots). It returns at most 12 prioritized questions and a verdict.
+2. **Researchers.** Add open nodes the griller missed, dedupe against the log, keep the top 12 by priority, group by area, and spawn 2 to 4 `general-purpose` agents in one message with the verbatim prompt in `references/researcher-prompt.md`. They cite or say the project is silent. A researcher may be reused across rounds via SendMessage; a griller never.
+3. **Merge.** Open every citation; reject one that does not exist or does not say what is claimed, and re-ask it. Update node states, add the children the answers unlock, append IDs and never renumber. Append the round to the log.
+4. **Check the pass conditions.**
 
-You may answer a griller question yourself only when you can cite evidence already read in this session, to the same standard as a researcher. Never answer from general knowledge; that is exactly the deviation the loop exists to prevent.
+You may answer a question yourself only from evidence already read this session, to the same citation standard. Never from general knowledge; that is the deviation the loop exists to prevent. Nobody answers a product or business question: it becomes `[D]` with options.
 
-### Node states
+### Tags
 
-| State | Tag | Requires |
+| Tag | Means | Requires |
 |---|---|---|
-| Resolved | `[E: path:line]` or `[E: doc#section]` | A citation a reader can open that says this |
-| Convention | `[C: path, path]` | At least 2 consistent examples in the repo |
-| Assumed | `[A#]` | No evidence; a default, why, and what breaks if wrong, all registered |
-| Decision | `[D#]` | Evidence cannot settle it (product or business choice); options plus the recommended default the PRD currently follows |
-| Human | `[H]` | Set only from the user's confirmations or edits during re-align |
-| Not applicable | `[N/A: reason]` | A reason the griller can challenge |
-
-An honest `[A]` beats a fake `[E]`. The loop's goal is not "no open questions"; it is "nothing silently assumed", the same bar `/grilling` sets.
+| `[E: path:line]`, `[E: doc#section]` | Evidence | A citation a reader can open that says this |
+| `[C: path, path]` | Convention | At least 2 consistent examples |
+| `[A#]` | Assumed | Default, why, and what breaks if wrong, all registered |
+| `[D#]` | Decision | Evidence cannot settle it; options plus the default the PRD follows |
+| `[H]` | Human | Only from confirmations or edits during re-align |
+| `[N/A: reason]` | Not applicable | A reason the griller can challenge |
 
 ### Pass conditions
 
-The loop stops at the first of these:
+Stop at the first that holds, in this order:
 
-- **Converged.** The griller returns no blocking or major questions AND the final audit passes (`references/loop-protocol.md` §9: sample citations, T-case coverage, untagged claims, scope). One clean griller pass alone is not enough; a lenient griller is the cheapest way for the loop to lie to itself.
-- **Diminishing returns.** A round changed fewer than 2 nodes and added none: run the audit and stop.
-- **Budget.** `--rounds` reached (default 5): audit, stop, Status `budget-exhausted`.
-- **Escalated.** More than 5 nodes are `[D]` with real blast radius, or the root interpretation blocks most of the tree: stop early with Status `escalated`. More unattended rounds cannot settle what only the human can; recommend `/grilling` on just those nodes.
+- **Escalated.** More than 5 `[D]` nodes with real blast radius, or the interpretation blocks most of the tree. More rounds cannot settle what only the human can; recommend `/grilling` on those nodes.
+- **Converged.** The griller reports no blocking or major questions and the final audit (protocol §7) passes. If the audit fails, fix what it found, run one more round, then stop regardless. One clean griller pass alone is not enough; a lenient griller is the cheapest way for the loop to lie to itself.
+- **Diminishing returns.** A round changed fewer than 2 nodes and added none. Audit; pass is `converged`, fail is `budget-exhausted`.
+- **Budget.** `--rounds` reached. Audit, `budget-exhausted`. A run still adding nodes at the budget usually has an interpretation problem; say so instead of asking for more rounds.
 
-## Phase 3: Deliver
+## Deliver
 
-Finalize `PRD.md` per the template. Section order is review order:
-
-1. **Confirm these.** 3 to 5 nodes ranked by uncertainty × blast radius (rule in the protocol §6). Each: the question in one line, the default the PRD took, why it is uncertain, what changes if wrong. Hard cap 5; overflow goes to the assumptions register with a default and a T-case.
-2. **Requirements tree.** Every node with ID and provenance tag, written in the requirement's language; IDs and tags stay ASCII.
-3. **Acceptance cases.** `T#` given/when/then in the project's test style, each naming the R-nodes it covers. Every behaviour node and every assumption outside the confirm list has at least one.
-4. **Assumptions register** and **sources**.
-
-Set Status (`converged`, `budget-exhausted`, or `escalated`) and report in this shape, with the confirm items in full so the user can answer from chat without opening the file:
+Finalize `PRD.md` per the template. Section order is review order: confirm list (ranked by uncertainty × blast radius, protocol §5), requirements tree, acceptance cases, assumptions register, sources. Set Status and report with the confirm items in full, so the user can answer from chat:
 
 ```
 AFK grill done: converged in 3 rounds (budget 5) · 41 nodes · 18 acceptance cases
@@ -108,26 +98,17 @@ C3 [A2]  Keep queued writes 7 days then drop?                    default: yes
 Then: /afk-grill docs/prd/offline-sync/PRD.md   (optionally mark ✂️ ❌ ✏️ ✅ on any line first)
 ```
 
-Do not start implementing. The approved PRD is the input to planning; this skill ends at alignment.
+Do not start implementing. The approved PRD is the input to planning.
 
-## Phase 4: Confirm, prune, re-align
+## Re-align
 
-The user answers the confirm items and optionally marks nodes; the syntax is in `references/prune-and-realign.md`, and chat answers work the same way. Apply their input as `[H]` ground truth, retire pruned subtrees, reopen only the nodes that depended on what changed, run the loop on that frontier with everything else frozen, regenerate the affected T-cases, bump the version, append to the log. A review that comes back with no marks and no unanswered confirm items sets Status `approved`.
+The user answers the confirm items and optionally marks nodes; syntax in `references/prune-and-realign.md`, and chat answers work the same. Apply their input as `[H]`, retire pruned subtrees, reopen only the nodes that depended on what changed, run the loop on that frontier with everything else frozen, regenerate the affected T-cases, bump the version, append to the log. No marks and no unanswered items sets Status `approved`.
 
-If a human answer contradicts cited evidence, keep the human's answer but flag the conflict beside it with the citation. They may not know the code moved, or the code is what the requirement is changing; either way it stays visible.
+A human answer that contradicts cited evidence wins the PRD, with the citation kept beside it as a visible conflict. They may not know the code moved, or the code is what the requirement changes.
 
-## Guardrails
+## Rules
 
-- Never ask the user mid-loop except on NO-GO. Silence is the feature; questions go to the confirm list.
-- Never renumber IDs across versions; the user refers to them.
-- Never let the griller see reasoning, and never let a researcher decide a product question; it classifies it `[D]` with options.
-- Never let the confirm list grow past 5 or a round past 12 questions; prioritize instead. The human's ten minutes are the scarce resource this design protects.
-- Keep `PRD.md` to claims and tags. Reasoning, rejected answers and round history live in `grill-log.md`.
-
-## Files
-
-- `references/loop-protocol.md`: round mechanics, uncertainty ranking, T-case rules, audit, budgets, log format, resume. Read at the start of every new run or resume.
-- `references/griller-prompt.md`: verbatim prompt for the griller. Copy it; do not paraphrase.
-- `references/researcher-prompt.md`: verbatim prompt for researchers.
-- `references/prd-template.md`: exact PRD skeleton, ID scheme, tag legend.
-- `references/prune-and-realign.md`: review mark syntax and the re-align procedure.
+- Never ask the user mid-loop except on NO-GO; questions go to the confirm list.
+- Never renumber IDs; the user refers to them.
+- Never exceed 5 confirm items or 12 questions per round; prioritize instead. The human's ten minutes are what this design protects.
+- `PRD.md` holds claims and tags. Reasoning, rejected answers, and round history live in `grill-log.md`.

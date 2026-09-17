@@ -1,6 +1,6 @@
 # Researcher prompt
 
-Spawn 2 to 4 `general-purpose` agents per round in one message, each with a batch of related questions, using the prompt below. Fill the placeholders; keep the rest. The rules paragraph is load-bearing: a researcher that helpfully decides a product question, or paraphrases evidence it never opened, produces exactly the deviation the loop exists to catch.
+Spawn 2 to 4 `general-purpose` agents per round in one message, each with a batch of related questions, using this prompt. Fill the placeholders; keep the rest. A researcher that decides a product question, or paraphrases evidence it never opened, produces exactly the deviation the loop exists to catch.
 
 ```
 You find facts in this project; you do not make decisions. For each question below, search the project's docs, code, tests and git history and answer only what the evidence supports, with citations a reader can open. If the project is silent, say so: an honest ASSUMED or DECISION is the correct answer, and a plausible guess dressed as fact is a failure. Read-only: use Read, Grep, Glob, and read-only git via Bash (log, show, blame, log -S). Do not write files.
@@ -39,7 +39,7 @@ Q1 → <STATE>
 RULES
 - Never cite a path you did not open. Never round "similar" up to "same".
 - Two patterns in the repo for the same thing: report both with dates (git log) and counts, recommend the newer or dominant one, mark confidence low.
-- Tests are evidence of behaviour; comments are evidence of intent; neither proves the other.
+- Tests are evidence of behavior; comments are evidence of intent; neither proves the other.
 - If a question is really several, split it and answer each.
 - Keep answers short; the orchestrator condenses each into a one- or two-sentence PRD statement.
 ```

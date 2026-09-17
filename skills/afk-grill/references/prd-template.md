@@ -1,17 +1,8 @@
 # PRD template
 
-Use this exact skeleton. The marker comment on line 1 is how the skill detects the mode on re-runs; keep it. Write prose in the requirement's language; IDs, tags and states stay ASCII. The PRD holds claims and tags only; reasoning goes to `grill-log.md`.
+Use this exact skeleton. The marker comment on line 1 is how the skill detects the mode on re-runs; keep it. Prose in the requirement's language; IDs, tags, and states stay ASCII. Claims and tags only; reasoning goes to `grill-log.md`.
 
-## ID scheme
-
-- `C#` confirm items (3 to 5) · `R#` / `R#.#` tree nodes (append only, never renumber) · `T#` acceptance cases · `A#` assumptions · `D#` decisions. A `D` that made the confirm list appears there; the rest sit in the register with the default taken.
-- Fixed first level: R1 Goal and success signal · R2 Users and triggers · R3 Scope and non-goals · R4 Behaviour · R5 Data · R6 Interfaces and compatibility · R7 Non-functional · R8 Dependencies and integrations · R9 Rollout and rollback · R10 Acceptance and verification.
-
-## Provenance tags
-
-`[E: path:12-30]` evidence · `[E: docs/x.md#section]` evidence in a doc · `[C: path, path]` convention, at least two examples · `[A3]` assumption 3 · `[D2]` follows the default of decision 2 · `[H]` human-provided · `[N/A: reason]` not applicable
-
-## Skeleton
+IDs: `C#` confirm items (3 to 5) · `R#`, `R#.#` tree nodes (append only, never renumber) · `T#` acceptance cases · `A#` assumptions · `D#` decisions. A `D` on the confirm list appears there; the rest sit in the register with the default taken. Review marks are defined in `prune-and-realign.md`.
 
 ```markdown
 <!-- afk-grill: prd -->
@@ -47,7 +38,7 @@ Read only what you want; every line carries its evidence.
 ### R3 Scope and non-goals
 - **R3.1** In: …
 - **R3.2** Out: … `[H]`
-### R4 Behaviour
+### R4 Behavior
 - **R4.1** <happy path> `[E: …]`
   - **R4.1.1** <edge case> `[C: src/a.py:10, src/b.py:22]`
 ### R5 Data
@@ -59,7 +50,7 @@ Read only what you want; every line carries its evidence.
 - **R10.1** <how success is verified; which T-cases gate release>
 
 ## 3. Acceptance cases (the safety net)
-Style: <framework> as in `<tests/e2e/…>`; one behaviour per case; concrete values.
+Style: <framework> as in `<tests/e2e/…>`; one behavior per case; concrete values.
 
 - **T1** [R4.1] Given <state> · When <action> · Then <observable result>
 - **T2** [R4.1.1, A2] Given … · When … · Then …
@@ -73,9 +64,5 @@ Defaults the loop took without evidence, outside the confirm list. Each is pinne
 ## 5. Sources consulted
 - docs/architecture.md, adr/0007-sync.md, src/sync/*, tests/e2e/test_sync.py, git log -S"offline"
 
-<!-- legend: [E] evidence · [C] convention (≥2 examples) · [A#] assumption · [D#] decision default · [H] human · [N/A] not applicable -->
+<!-- legend: [E: path:line] evidence · [E: doc#section] evidence in a doc · [C: path, path] convention (≥2 examples) · [A#] assumption · [D#] decision default · [H] human · [N/A: reason] not applicable -->
 ```
-
-## Review marks the user may add
-
-Details in `prune-and-realign.md`. `✂️` or `[PRUNE]` removes a node and its subtree · `❌` or `[WRONG] note` re-grills with the note as truth · `✏️` or `[EDIT]` marks a line the user rewrote · `✅` or `[OK]` freezes · `C1 → answer` confirms.
