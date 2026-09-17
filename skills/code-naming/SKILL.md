@@ -1,51 +1,47 @@
 ---
 name: code-naming
-description: "Naming standards for new code, refactoring, and naming reviews; rename symbols consistently across their references."
+description: "Naming pass: judge every function, variable, class, constant, and file name by the call-site test (does a reader know what it means where it appears, without opening the implementation) and rename safely across every reference. Catches filler (data/info/helper/manager/utils), action chains, implementation details in names, repeated context, vocabulary drift, misleading side effects, and over-abbreviation. Use when names are the subject: rename this, review the naming, 命名, 起名, 这个名字不好, 帮我改名, or when a task's deliverable is a rename."
 argument-hint: "[path | --all] [--report-only]"
 ---
 
 # Code Naming
 
-A name passes the **call-site test** when a reader knows what it means where it appears, without opening its implementation. Choose the shortest name that passes.
+A name passes the **call-site test** when a reader knows what it means where it appears, without opening the implementation. Pick the shortest name that passes. Every rule below is a way of failing that test.
 
-## Scope and mode
+## Boundaries
 
-- While writing code, apply the rules to introduced or changed names, including locals and filenames.
-- A scan of a path, glob, or module covers names defined there. `--all` covers tracked source files, excluding generated and vendored code.
-- Otherwise collect staged, unstaged, and untracked changes with `git diff`, `git diff --cached`, and `git status --short`. Review introduced or changed names.
-- If the tree is clean, resolve the base branch from the task or repository metadata and compare from its merge base with HEAD. Report an unresolved base or an empty comparison.
+- A name that reveals mixed responsibilities is a design finding. Report it; a naming pass does not restructure.
+- Public APIs, CLI flags, environment variables, wire fields, storage keys, and schema names are contracts with outside consumers. Propose the name and its impact; change it only when the task explicitly authorizes the contract change.
 
-Reviews produce findings unless fixes are also requested; `--report-only` always leaves target files unchanged. Otherwise fix code being written in the active task or cleanup the user requested.
+## Target
+
+- A path, glob, or module: names defined there. `--all`: every tracked source file, skipping generated and vendored code.
+- Otherwise the working tree: names introduced or changed in `git diff`, `git diff --cached`, and untracked files. Clean tree: compare the branch with the merge base of its base branch, and report if the base cannot be resolved or the comparison is empty.
+- Invoked during a coding task: the names that task introduces or touches, including locals and filenames.
+
+A review request, or `--report-only`, produces findings without editing. A rename or cleanup request, or an active coding task, applies the renames.
+
+## Rules
+
+- **Say the concept, not the container.** `data`, `info`, `item`, `helper`, `manager`, `utils`, `process`, `handle` name nothing. Replace with the actual concept unless the enclosing scope already supplies it (`for item in cart.items` is fine).
+- **Say the intent, not the steps.** `applyDiscount` over `processItems`; `loadUserOrFail` over `fetchAndValidateAndReturnUser`. An action chain in a name usually marks a function doing two jobs.
+- **Leave implementation out** unless callers choose by it. `userCache` is right when there is also `userStore`; `userHashMap` is not.
+- **Do not repeat context.** `Order.status`, not `Order.orderStatus`; `user.email`, not `user.userEmail`.
+- **One term per concept.** If the module says `fetch`, do not introduce `retrieve` for the same thing. Follow neighboring casing and verb conventions; names imposed by a framework or protocol stay as they are.
+- **Name the current role.** `newParser`, `parserV2`, `fixedCalc`, `tmpResult` mean something only to whoever was there when the old one existed. Real protocol versions and compatibility aliases keep their numbers.
+- **Abbreviate only inside a tight scope.** `i`, `ctx`, `req`, and established project shorthand are fine locally. A name that crosses a file or module boundary spells itself out.
+- **Booleans state a positive fact.** `isActive`, `canEdit`, `hasChildren`; not `notDisabled`, not `flag`.
+- **Functions name the action or the return value.** Make caller-visible side effects visible the way the project does (`save`, `emit`, `ensure`).
+- **Variables carry cardinality and units.** `users` is a collection, `user` is one; `timeoutMs`, not `timeout`. Constants name the role: `MAX_RETRY_COUNT`, not `THREE`.
+- **Types and files name their responsibility** and follow neighboring conventions.
 
 ## Workflow
 
-1. **Establish vocabulary.** Read target definitions and representative call sites. Identify domain terms, casing, verb conventions, and names imposed by external contracts.
-2. **Evaluate every target name.** Apply the call-site test and rules below. Propose a replacement only when it improves meaning in context. A name that exposes mixed responsibilities is a separate design finding; a naming review does not by itself authorize restructuring.
-3. **Rename within scope.** For authorized fixes, follow the reference and compatibility rules below. Account for every use of the symbol and check destination names for collisions in the relevant scope.
-4. **Verify.** Run applicable compilation, type, lint, and test checks. Search again for the old names, explain any retained occurrences, and inspect the diff for changes beyond the intended renames.
-
-## Name by meaning
-
-- **Vocabulary:** use one term per concept while preserving distinct domain roles. Follow neighboring casing and verbs such as `fetch`, `load`, and `get`.
-- **Context:** `Order.status` is precise; a module-global `status` may need qualification. Judge the complete expression callers see.
-- **Intent:** prefer `applyDiscount` to `processItems`. Source, format, and algorithm belong in the name when callers choose between them.
-- **Specificity:** replace filler such as `data`, `info`, or `helper` with the actual concept when the surrounding scope does not supply it. Long action chains can signal multiple responsibilities.
-- **Stable meaning:** name the current role. Session labels such as `newParser` or `fixedCalc` expire; real protocol versions and compatibility names carry lasting meaning.
-- **Readable scope:** use established abbreviations and short loop variables locally; names crossing boundaries must stand alone.
-
-By kind:
-
-- Functions name the action or returned value. Make caller-visible side effects clear using the project's conventions.
-- Predicates and booleans state a positive fact, such as `isActive` or `canEdit`.
-- Variables use nouns with accurate cardinality and meaningful units. Constants name the role of a value, such as `MAX_RETRY_COUNT`.
-- Classes, types, and files name their responsibility and follow neighboring conventions.
-
-## References and compatibility
-
-Prefer symbol-aware rename tools. Search with `rg` for imports, reflective lookups, tests, configuration, and documentation the tool may miss; read string matches before changing them. An identical spelling may refer to a different symbol or a serialized contract.
-
-Public APIs, CLI flags, environment variables, wire fields, storage keys, and schema names have consumers beyond local references. Change them only when the active task authorizes the contract change and accounts for those consumers; otherwise report the proposed name and impact. Internal renames without compatibility obligations update callers directly.
+1. **Learn the vocabulary.** Read the target definitions and representative call sites. Note the domain terms, casing, verb conventions, and names fixed by external contracts.
+2. **Judge every target name at its call site.** Propose a replacement only when it reads better in context; a rename that is merely different is noise.
+3. **Rename across every reference.** Prefer the language's symbol-aware rename. Then search with `rg` for what it misses: imports, reflective lookups, string keys, tests, config, docs. Read each string match before touching it; the same spelling may be a different symbol or a serialized contract. Check the new name for collisions in its scope.
+4. **Verify.** Run the project's compile, type, lint, and test checks. Search once more for the old name, explain any retained occurrence, and read the diff for changes beyond the intended renames.
 
 ## Report
 
-For scans, use `File:Line | Name | Problem | Proposed | Contract impact | Outcome`. Summarize renamed and reported symbols, verification results, and unresolved references. Keep routine naming work within the surrounding task's normal report.
+Scans: `File:Line | Name | Problem | Proposed | Contract impact | Outcome`, then a summary of what was renamed, what was only proposed, the checks that ran, and any unresolved references. A rename done inside a larger task is reported in that task's normal summary.

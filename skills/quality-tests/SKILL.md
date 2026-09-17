@@ -1,53 +1,68 @@
 ---
 name: quality-tests
-description: "Test standards for writing, reviewing, and repairing tests: protect observable behavior and prove each added or rewritten test can detect its intended failure."
+description: "Test pass: write, review, or repair tests so that each failure points at one behavior in one scenario, and prove every added or rewritten test by watching it fail first. Catches implementation mirrors, vacuous or presence-only asserts, mocks that replace the subject, happy-path-only suites, sleep-based or order-dependent tests, expectations adjusted to match a defect, and missing coverage of business rules, boundaries, and error paths. Use when tests are the subject: write tests for this, review the tests, improve coverage, 写测试, 补测试, 单测, 测试写得好不好, or when a task's deliverable is a test file."
 argument-hint: "[path | --all] [--report-only]"
 ---
 
 # Quality Tests
 
-A useful failure identifies **one behavior in one scenario**. Several assertions may describe that outcome; unrelated behaviors belong in separate tests.
+A test is worth having when its failure names **one broken behavior in one scenario**. Several assertions may describe that one outcome; a second scenario is a second test. Every test added or rewritten here is seen failing before it is trusted.
 
-## Scope and mode
+## Boundaries
 
-- A requested path, glob, or module selects its tests and the code they cover. `--all` selects tracked tests and their production subjects, excluding generated and vendored code.
-- Otherwise collect staged, unstaged, and untracked changes with `git diff`, `git diff --cached`, and `git status --short`. Include changed production code to find missing coverage.
-- If the tree is clean, resolve the base branch from the task or repository metadata and compare from its merge base with HEAD. Report an unresolved base or an empty comparison.
+A production bug the tests expose is reported with the failing evidence. Fix it only when the active task includes the fix. Never adjust the expectation to the defect.
 
-Reviews produce findings unless fixes are also requested; `--report-only` always leaves target files unchanged. Otherwise apply the rules while writing tests or performing requested cleanup.
+## Target
 
-## Workflow
+- A path, glob, or module: the tests there and the code they cover. `--all`: every tracked test and its subject, skipping generated and vendored code.
+- Otherwise the working tree: tests and production code in `git diff`, `git diff --cached`, and untracked files. Changed production code is in scope so that missing coverage is found. Clean tree: compare the branch with the merge base of its base branch, and report if the base cannot be resolved or the comparison is empty.
+- Invoked during a coding task: the tests that task writes or touches.
 
-1. **Map behavior.** Read each target test and its production subject. State the intended contract, risky scenarios, and existing coverage. Judge a bug fix against the intended behavior, rather than treating current output as its specification.
-2. **Evaluate coverage.** Apply the standards below to every target test. Account for each risky behavior of changed code as covered or a concrete gap; prioritize business rules, regressions, boundaries, and error paths.
-3. **Write or repair.** For authorized edits, state the expectation before writing the assertion. Rewrite weak assertions, split unrelated scenarios, replace inappropriate mocks, or add missing coverage. Delete a test only when it has no meaningful contract to protect, and report the deletion.
-4. **Prove red, then green.** Apply the red gate below to every added or behaviorally rewritten test.
-5. **Verify integration.** Run the project test suite after targeted checks. Report the command and relevant failure output, or the concrete reason the suite could not run. Re-read edited files and inspect the diff for unintended production changes.
+A review request, or `--report-only`, produces findings without editing. A write, repair, or coverage request, or an active coding task, edits tests.
 
-## Coverage that earns its cost
+## What deserves a test
 
-- Protect calculations, permissions, state transitions, limits, and public contracts.
-- Reproduce each fixed bug with a named regression scenario.
-- Choose boundaries relevant to the contract: empty input, duplicates, invalid values, limits and their neighbors. Assert error results and required rollback or side effects.
-- Exercise fragile mechanics such as ordering, parsing, timezones, encoding, floating point, pagination, and retries even when the implementation is short.
-- Cover private helpers through meaningful caller behavior. Framework behavior and trivial wiring need tests only when they form a real project contract.
+In priority order:
 
-## Assertions and isolation
+1. **Business rules**: calculations, permissions, state transitions, limits, and public contracts.
+2. **Regressions**: each fixed bug gets a test named for the scenario that used to break.
+3. **Boundaries the contract cares about**: empty, one, many, duplicates, invalid, the limit and its neighbors. Error paths assert the error and any required rollback or side effect.
+4. **Fragile mechanics** even when the code is short: ordering, parsing, timezones, encoding, floating point, pagination, retries.
 
-- Derive expectations independently of the implementation: literal values, hand calculations, or an independent oracle. An expectation changed to match a defect conceals it; repair or report the production defect.
-- Assert observable results. Presence, type, private-state, or mock-call checks alone are insufficient when the contract promises a richer outcome. Boundary smoke tests may have a deliberately narrow contract.
-- Keep the subject and its meaningful logic real. Substitute external boundaries when isolation requires it; an interaction assertion is appropriate when the interaction itself is the contract.
-- On errors, check the specific type and relevant stable fields or message. Use explicit tolerances for floating point; assert whole small collections or the defining properties of larger ones.
-- Reserve broad snapshots for rendered output; assert business rules directly.
-- Control clocks, randomness, filesystem state, and network dependencies. Use explicit synchronization instead of sleeps. Integration tests use controlled services and independent state.
-- Name tests by scenario and expectation. Separate arrange, act, and assert with blank lines. Keep decisive input values visible in fixtures; use one scenario per fixture setup.
+Private helpers are covered through the caller's behavior. Framework behavior and trivial wiring get a test only when they form a real project contract.
+
+## What makes a test wrong
+
+- **Implementation mirror.** The expected value is computed by the same logic as the subject. Derive expectations independently: a literal, a hand calculation, or a separate oracle.
+- **Vacuous assertion.** Presence, type, "did not throw", or a mock-was-called check standing in for a promised result.
+- **Mocked subject.** The thing under test, or the logic that makes it meaningful, is replaced. Substitute external boundaries only; assert on an interaction only when the interaction is the contract.
+- **Expectation bent to a defect.** The assertion was changed to match wrong output. Repair or report the production defect.
+- **Happy path only** where the risk is in the error or boundary.
+- **Uncontrolled environment.** Real clock, randomness, network, shared filesystem state, or `sleep` as synchronization. Inject or fake them; use explicit waits.
+- **Multiple scenarios in one test.** Split so each failure has one meaning.
+- **Broad snapshot** where a business rule should be asserted directly. Snapshots are for rendered output.
+
+## Writing a test
+
+- Name it by scenario and expectation: `rejects_transfer_when_balance_insufficient`.
+- Arrange, act, assert, separated by blank lines. Keep the decisive input values visible in the test, not buried in a shared fixture.
+- On errors, assert the specific type and the stable fields or message. Use explicit tolerances for floats. Assert whole small collections; assert the defining properties of large ones.
+- State the expectation before writing the assertion.
 
 ## Red gate
 
-Run the test against the pre-fix behavior or a deliberate fault in the behavior it guards. For deliberate faults, use an isolated copy containing the current changes. Confirm that the intended assertion fails; collection errors, broken imports, and unrelated failures do not establish red.
+Every added or behaviorally rewritten test must fail once for the right reason. Run it against the pre-fix code, or against a deliberate fault in the behavior it guards (in an isolated copy of the current changes). The intended assertion must be what fails; a collection error, import error, or unrelated failure does not count. Restore the correct behavior and watch it pass.
 
-Restore correct behavior and observe green. If the environment prevents either run, report the exact gap and leave the test's verification status explicit.
+If the environment prevents either run, say exactly which run and why, and mark the test unverified.
+
+## Workflow
+
+1. **Map the behavior.** Read each target test and its subject. State the intended contract, the risky scenarios, and what existing tests already cover. For a bug fix, judge against intended behavior, not current output.
+2. **Evaluate.** Apply the lists above to every target test. Account for every risky behavior of changed code as covered or as a concrete gap.
+3. **Write or repair** within scope. Delete a test only when it protects no meaningful contract, and report the deletion.
+4. **Red gate** every added or rewritten test.
+5. **Run the suite** after the targeted checks. Report the command and any failure output, or the concrete reason it could not run. Read the diff for accidental production changes.
 
 ## Report
 
-For reviews, use `File:Line | Test | Problem | Fix | Outcome`. List coverage gaps as `Subject | Scenario | Expected behavior`. For changes, include red/green evidence, suite results, and deletions. Distinguish verified coverage from work that remains unverified.
+Reviews: `File:Line | Test | Problem | Fix | Outcome`, plus gaps as `Subject | Scenario | Expected behavior`. Changes: red and green evidence per test, suite result, and any deletions. Keep verified and unverified work clearly separated.
