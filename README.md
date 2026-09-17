@@ -11,7 +11,7 @@
 - **code-comments** — 注释是主题时用：注释只说代码说不出的 why，删掉复述、横幅、改动记录和注释掉的代码，修正过期注释
 - **quality-tests** — 测试是主题时用：一个失败只指向一个行为，禁止镜像实现和空断言；新测试先看它红一次
 - **no-afterimage** — 中途否决、排除、纠正过什么之后，或提交 / PR / 交接前用：要求"不要香菜"就端出一碗拉面，而不是 NoCilantroRamen 或一条断言没有香菜的测试
-- **afk-grill** — 无人值守的需求对齐循环，从一句话需求产出可十分钟审完的 PRD。基于 grilling 的设计树访谈协议，该协议原文收录在 `afk-grill/references/grilling.md`，不作为独立 skill 安装
+- **afk-grill** — 无人值守的需求对齐循环，从一句话需求产出可十分钟审完的 PRD
 - **readme-writer** — 先从仓库收集事实并验证命令，再面向真实读者写 README
 
 ## 安装
