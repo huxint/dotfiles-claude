@@ -1,0 +1,1 @@
+Write code directly and confidently. Validate only at system boundaries; trust internal code and framework guarantees. Do not add error handling, fallbacks, or validation for impossible scenarios. Avoid over-cautious, anxiety-driven defensive coding (“code diarrhea”). Prefer simple, clear implementation over paranoid over-engineering.
