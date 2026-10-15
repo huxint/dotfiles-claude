@@ -1,21 +1,24 @@
 # dotfiles-claude
 
-个人觉得最好用的 Claude Code 轻量配置
+个人常用的 Claude Code 轻量配置与技能。
 
-## Skills
+## 技能
 
-每个 skill 独立触发，各管一个维度：
+各技能聚焦一类任务，按需使用：
 
-- **slopscan** — 审查 AI 生成代码的形态问题：不可能触发的防御、多余的封装、不够简洁的写法、抽象过度或不足、复述注释和填充命名，兼查吞错、伪造默认值、误用 API 等真缺陷；每条 finding 给出更好的写法，按层级报告并可直接修
-- **code-naming** — 命名是主题时用：按调用处能否一眼看懂来判断，禁止填充词、动作链、实现细节入名，安全地重命名所有引用
-- **code-comments** — 注释是主题时用：注释只说代码说不出的 why，删掉复述、横幅、改动记录和注释掉的代码，修正过期注释
-- **quality-tests** — 测试是主题时用：一个失败只指向一个行为，禁止镜像实现和空断言；新测试先看它红一次
-- **no-afterimage** — 中途否决、排除、纠正过什么之后，或提交 / PR / 交接前用：要求"不要香菜"就端出一碗拉面，而不是 NoCilantroRamen 或一条断言没有香菜的测试
-- **afk-grill** — 无人值守的需求对齐循环：griller 子代理提问、researcher 子代理从项目代码和文档里带引用作答，收敛后只把 3–5 个最不确定的节点交给人确认，其余节点由验收用例兜底；人剪枝后只重跑受影响的子树
-- **readme-writer** — 先从仓库收集事实并验证命令，再面向真实读者写 README
+- [slopscan](skills/slopscan/SKILL.md) — 审查冗余防御、无效封装和不合理的抽象，给出具体改法。
+- [code-naming](skills/code-naming/SKILL.md) — 按实际使用语境改进命名，同步更新引用。
+- [code-comments](skills/code-comments/SKILL.md) — 保留必要的原因、约束与接口约定，清理复述和过期内容。
+- [quality-tests](skills/quality-tests/SKILL.md) — 用测试保护关键行为，避免照抄实现和无效断言。
+- [no-afterimage](skills/no-afterimage/SKILL.md) — 清除废弃方案和对话过程留下的痕迹，让交付物准确表达最终需求。
+- [grilling](skills/grilling/SKILL.md) — 通过逐轮提问梳理关键决策，查清事实，明确取舍。
+- [readme-writer](skills/readme-writer/SKILL.md) — 根据仓库事实编写简洁、可操作的 README。
 
 ## 安装
 
+在仓库根目录执行：
+
 ```bash
+mkdir -p ~/.claude/skills
 cp -r skills/* ~/.claude/skills/
 ```

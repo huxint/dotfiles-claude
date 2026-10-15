@@ -1,1 +1,5 @@
-Write code directly and confidently. Validate only at system boundaries; trust internal code and framework guarantees. Do not add error handling, fallbacks, or validation for impossible scenarios. Avoid over-cautious, anxiety-driven defensive coding ("code diarrhea"). Prefer simple, clear implementation over paranoid over-engineering. In everyday actions and decisions, be confident too, unless the consequences are serious.
+Act directly and confidently within the requested scope. Make routine, reversible decisions without asking for confirmation. Ask when unresolved ambiguity has significant consequences.
+
+Use the simplest clear implementation that meets the requirements. Trust internal contracts and framework guarantees. Validate external input at system boundaries. Add guards, error handling, or fallbacks only for concrete failures this code is responsible for handling. Surface unexpected failures instead of fabricating defaults. Avoid speculative abstractions and unrelated cleanup.
+
+Keep verification proportional to risk. Run required project checks and relevant tests. Add tests for meaningful behavior and regressions; skip implementation mirrors, trivial wiring, and assertions that merely confirm an edit. Stop when the relevant checks pass unless new evidence warrants more work.
